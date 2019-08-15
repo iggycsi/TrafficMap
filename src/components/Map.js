@@ -1,29 +1,58 @@
 import React, { Component } from 'react';
-import ReactMapGL, { Marker } from 'react-map-gl';
-import Pin from './Pin';
+import MapboxGL from 'mapbox-gl';
+
 
 export default class Map extends Component {
     constructor(props) {
         super(props);
 
         this.state = {
-            api_url: 'http://localhost:3000/',
+            api_url: 'http://data.edmonton.ca/resource/87ck-293k.json',
+            map: false, 
             viewport: {
-                width: 1100, 
-                height: 800, 
                 zoom: 13.9, 
-                latitude: 41.866090,
-                longitude: 21.944345,
+                center: [ 21.944345, 41.866090,]
             }, 
             token: 'pk.eyJ1IjoiaWdneWNzaSIsImEiOiJjanpiZjl2OXAwMGU3M25zMGhjMjd1amFzIn0.fSIsz56qXzKurQEaEJoJxw',
-            coords: [
-                { latitude: 41.865055, longitude: 21.942607 },  
-                { latitude: 41.865049, longitude: 21.933668 },
-                { latitude: 41.866762, longitude: 21.933688 },
-                { latitude: 41.868587, longitude: 21.934571 },
-            ], 
             data: null   
         };
+    }
+
+    initializeMap() {
+        MapboxGL.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
+        let map = new MapboxGL.Map({
+            container: "map", 
+            style: 'mapbox://styles/mapbox/light-v9',
+            ...this.state.viewport
+        });
+        this.setState({ map });
+    }
+
+    createFeatureCollection(data) {
+        let features = [];
+        data.forEach(point => {
+            features.push({
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point", 
+                    "coordinates": [
+                        parseFloat(point.location.longitude), 
+                        parseFloat(point.location.latitude),
+                    ]
+                },
+                "properties": {
+                    "description": point.description, 
+                    "details": point.details, 
+                    "duration": point.duration, 
+                    "impact": point.impact
+                }
+            });
+        });
+
+        return {
+            "type": "FeatureCollection",
+            "features": features
+        }
     }
 
     componentDidMount() {
@@ -32,27 +61,18 @@ export default class Map extends Component {
         if (!data) {
             fetch(api_url, {method: 'GET'})
             .then(response => response.json)
+            .then(response => this.createFeatureCollection(response))
             .then(response => this.setState({ data: response}));
         }
     }
-// dali se komentira
+
     render() {
-        const { coords, data } = this.state;
+        const { map, data } = this.state;
+        if (data && !map) this.initializeMap();
         return (
-            <ReactMapGL
-                mapboxApiAccessToken={this.state.token}
-                    {...this.state.viewport}
-                        onViewportChange={(viewport) => this.setState({viewport})}>
-                
-                {data && data.map(coord => (
-                    <Marker key={'Marker-${i * (Math.random() * 200 + 1)}'} 
-                    latitude={coord.location.latitude} 
-                    longitude={coord.location.longitude}>
-                        <Pin />
-                    </Marker>
-                ))}
-                
-            </ReactMapGL>
+
+            <div style={{ width: 1100, height: 800}} id='map' />
+            
         );
     }
 }
