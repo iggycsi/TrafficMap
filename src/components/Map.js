@@ -32,20 +32,22 @@ export default class Map extends Component {
         if (!data) {
             fetch(api_url, {method: 'GET'})
             .then(response => response.json)
-            .then(response => console.log(response));
+            .then(response => this.setState({ data: response}));
         }
     }
-
+// dali se komentira
     render() {
-        const { coords } = this.state;
+        const { coords, data } = this.state;
         return (
             <ReactMapGL
                 mapboxApiAccessToken={this.state.token}
                     {...this.state.viewport}
                         onViewportChange={(viewport) => this.setState({viewport})}>
                 
-                {coords.map(coord => (
-                    <Marker latitude={coord.latitude} longitude={coord.longitude}>
+                {data && data.map(coord => (
+                    <Marker key={'Marker-${i * (Math.random() * 200 + 1)}'} 
+                    latitude={coord.location.latitude} 
+                    longitude={coord.location.longitude}>
                         <Pin />
                     </Marker>
                 ))}
